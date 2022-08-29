@@ -15,6 +15,10 @@ func NewTransactionPool() *TransactionPool {
 	return new(TransactionPool)
 }
 
+func (tp *TransactionPool) Len() int {
+	return len(tp.transactions)
+}
+
 func (tp *TransactionPool) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for i, transaction := range tp.transactions {
 		if err := enc.AddObject(fmt.Sprintf("transaction[%3d]", i), transaction); err != nil {

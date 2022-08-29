@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"fmt"
+
 	"github.com/tclaudel/golang_blockchain/internal/values"
 	"github.com/tclaudel/golang_blockchain/pkg/repositories"
 	"go.uber.org/zap"
@@ -30,7 +32,7 @@ func NewBlockchainNode(logger *zap.Logger, wallet values.Wallet, repositories re
 		miningReward:     values.AmountFromFloat64(reward),
 	}
 
-	logger.Info("created new blockchain", zap.String("owner", wallet.String()))
+	logger.Info("created new blockchain node", zap.String("owner", wallet.Address().String()))
 	return bc
 }
 
@@ -39,7 +41,7 @@ func (bc *BlockchainNode) blocks() []*Block {
 }
 
 func (bc *BlockchainNode) CalculateTotalAmount(address values.Address) float64 {
-	var totalAmount float64 = 20.0
+	var totalAmount float64 // = 20.0
 	for _, block := range bc.chain {
 		for _, tx := range block.Transactions() {
 			if tx.IsSender(address) {
@@ -67,7 +69,7 @@ func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipien
 
 	if bc.CalculateTotalAmount(senderWallet.Address()) < value.Float64() {
 		bc.logger.Error("insufficient funds", zap.Error(err))
-		return err
+		return nil
 	}
 
 	bc.transactionsPool.Append(tx)
@@ -75,6 +77,10 @@ func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipien
 }
 
 func (bc *BlockchainNode) Commit() error {
+	if bc.transactionsPool.Len() == 0 {
+		return fmt.Errorf("no transactions to commit")
+	}
+
 	tx, err := values.NewTransaction(blockchainWallet, bc.owner.Address(), bc.miningReward)
 	if err != nil {
 		return err
