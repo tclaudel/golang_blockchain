@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const reward = 1.0
+
 type BlockchainNode struct {
 	transactionsPool *TransactionPool
 	chain            []*Block
@@ -18,14 +20,14 @@ type BlockchainNode struct {
 
 var blockchainWallet = values.NewWallet()
 
-func NewBlockchainNode(logger *zap.Logger, wallet values.Wallet, reward values.Amount, repositories repositories.Repositories) *BlockchainNode {
+func NewBlockchainNode(logger *zap.Logger, wallet values.Wallet, repositories repositories.Repositories) *BlockchainNode {
 	bc := &BlockchainNode{
 		transactionsPool: NewTransactionPool(),
 		chain:            []*Block{Genesis},
 		logger:           logger,
 		repositories:     repositories,
 		owner:            wallet,
-		miningReward:     reward,
+		miningReward:     values.AmountFromFloat64(reward),
 	}
 
 	logger.Info("created new blockchain", zap.String("owner", wallet.String()))
@@ -37,7 +39,7 @@ func (bc *BlockchainNode) blocks() []*Block {
 }
 
 func (bc *BlockchainNode) CalculateTotalAmount(address values.Address) float64 {
-	var totalAmount float64
+	var totalAmount float64 = 20.0
 	for _, block := range bc.chain {
 		for _, tx := range block.Transactions() {
 			if tx.IsSender(address) {
@@ -60,6 +62,11 @@ func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipien
 	verified, err := tx.Verify(senderWallet.PublicKey)
 	if !verified {
 		bc.logger.Error("transaction verification failed", zap.Error(err))
+		return err
+	}
+
+	if bc.CalculateTotalAmount(senderWallet.Address()) < value.Float64() {
+		bc.logger.Error("insufficient funds", zap.Error(err))
 		return err
 	}
 

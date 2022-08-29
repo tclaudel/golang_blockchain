@@ -16,18 +16,12 @@ type ProofOfWork struct {
 	Difficulty int `default:"3"`
 }
 
-type Blockchain struct {
-	UserAddress string  `default:"OxOTCLAUDEL"`
-	Reward      float64 `default:"1.0"`
-}
-
 type Repositories struct {
 	ProofOfWork ProofOfWork
 }
 
 type Config struct {
 	Log          Log
-	Blockchain   Blockchain
 	Repositories Repositories
 }
 

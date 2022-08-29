@@ -15,7 +15,7 @@ type ProofOfWork struct {
 func (p *ProofOfWork) Mine(previousHash values.Hash, transactions []values.Transaction) (values.Nonce, error) {
 	nonce := values.InitNonce()
 	for {
-		valid, err := p.validate(nonce, previousHash, transactions, values.Hard)
+		valid, err := p.validate(nonce, previousHash, transactions, p.difficulty)
 		if err != nil {
 			return values.Nonce{}, err
 		}
@@ -39,7 +39,12 @@ func (p *ProofOfWork) validate(nonce values.Nonce, previousHash values.Hash, tra
 		return false, err
 	}
 	guessHashStr := hash.String()
-	return guessHashStr[:difficulty.Difficulty()] == difficulty.Zeros(), nil
+	valid := guessHashStr[:difficulty.Difficulty()] == difficulty.Zeros()
+	if valid {
+		p.logger.Debug("Valid Nonce Found", zap.Int("nonce", nonce.Int()), zap.String("hash", guessHashStr))
+	}
+
+	return valid, nil
 }
 
 func NewProofOfWork(logger *zap.Logger, miningDifficulty int) (repositories.ProofOfWork, error) {
@@ -48,7 +53,8 @@ func NewProofOfWork(logger *zap.Logger, miningDifficulty int) (repositories.Proo
 	if err != nil {
 		return nil, err
 	}
-	logger.Debug("New proof of work", zap.Int("difficulty", miningDifficulty))
+
+	logger.Debug("New proof of work", zap.Int("difficulty", difficulty.Difficulty()), zap.String("zeros", difficulty.Zeros()))
 
 	return &ProofOfWork{
 		logger:     logger,

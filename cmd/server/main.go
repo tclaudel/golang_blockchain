@@ -30,7 +30,6 @@ func main() {
 	blockchainNode := entity.NewBlockchainNode(
 		logger,
 		ownerWallet,
-		values.AmountFromFloat64(cfg.Blockchain.Reward),
 		repositories)
 
 	userAWallet := values.NewWallet()
