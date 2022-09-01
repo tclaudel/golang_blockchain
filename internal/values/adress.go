@@ -52,6 +52,10 @@ func GenerateAddress(keyPair KeyPair) Address {
 	return Address{address: address}
 }
 
+func AddressFromString(address string) Address {
+	return Address{address: address}
+}
+
 func (a Address) String() string {
 	return a.address
 }

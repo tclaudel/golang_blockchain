@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Golang Blockchain
+  description: Golang blockchain
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080/'
+paths:
+  /blockchain:
+    get:
+      summary: Get blockchain
+      operationId: getBlockchain
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Block'
+
+components:
+  schemas:
+    Block:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        nonce:
+          type: integer
+        previous_hash:
+          type: string
+        hash:
+          type: string
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+    Transaction:
+      type: object
+      properties:
+        sender:
+          type: string
+        recipient:
+          type: string
+        amount:
+          type: integer

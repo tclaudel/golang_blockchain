@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/tclaudel/golang_blockchain/internal/values"
+	"github.com/tclaudel/golang_blockchain/pkg/entity"
 	"github.com/tclaudel/golang_blockchain/pkg/repositories"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -12,38 +13,66 @@ import (
 const reward = 1.0
 
 type BlockchainNode struct {
-	transactionsPool *TransactionPool
-	chain            []*Block
-	logger           *zap.Logger
-	repositories     repositories.Repositories
-	owner            values.Wallet
-	miningReward     values.Amount
+	nodeWallet          values.Wallet
+	transactionsPool    *TransactionPool
+	logger              *zap.Logger
+	repositories        repositories.Repositories
+	owner               values.Wallet
+	miningReward        values.Amount
+	walletInitialAmount values.Amount
 }
 
-var blockchainWallet = values.NewWallet()
-
-func NewBlockchainNode(logger *zap.Logger, wallet values.Wallet, repositories repositories.Repositories) *BlockchainNode {
+func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet values.Wallet, walletInitialAmount values.Amount, repositories repositories.Repositories) (*BlockchainNode, error) {
 	bc := &BlockchainNode{
-		transactionsPool: NewTransactionPool(),
-		chain:            []*Block{Genesis},
-		logger:           logger,
-		repositories:     repositories,
-		owner:            wallet,
-		miningReward:     values.AmountFromFloat64(reward),
+		nodeWallet:          nodeWallet,
+		transactionsPool:    NewTransactionPool(),
+		logger:              logger,
+		repositories:        repositories,
+		owner:               wallet,
+		miningReward:        values.AmountFromFloat64(reward),
+		walletInitialAmount: walletInitialAmount,
 	}
 
-	logger.Info("created new blockchain node", zap.String("owner", wallet.Address().String()))
-	return bc
+	logger.Info("initialized blockchain node", zap.String("owner", wallet.Address().String()))
+	return bc, nil
 }
 
-func (bc *BlockchainNode) blocks() []*Block {
-	return bc.chain
+func (bc *BlockchainNode) Blocks() ([]*Block, error) {
+	chain, err := bc.repositories.Blockchain().Get()
+	if err != nil {
+
+		return nil, err
+	}
+
+	var blockchain = make([]*Block, len(chain.Chain()))
+	for i, block := range chain.Chain() {
+		var b Block
+		err := b.FromEntity(block)
+		if err != nil {
+			bc.logger.Error("failed to unmarshal block", zap.Error(err))
+			return nil, err
+		}
+		blockchain[i] = &b
+	}
+
+	return blockchain, nil
 }
 
-func (bc *BlockchainNode) CalculateTotalAmount(address values.Address) float64 {
-	var totalAmount float64 // = 20.0
-	for _, block := range bc.chain {
-		for _, tx := range block.Transactions() {
+func (bc *BlockchainNode) CalculateTotalAmount(address values.Address) (float64, error) {
+	var totalAmount = 0.0
+	blocks, err := bc.Blocks()
+	if err != nil {
+		return 0, err
+	}
+
+	for _, block := range blocks {
+		txs, err := block.Transactions()
+		if err != nil {
+			bc.logger.Error("failed to get transactions from block", zap.Error(err))
+			return 0, err
+		}
+
+		for _, tx := range txs {
 			if tx.IsSender(address) {
 				totalAmount -= tx.Amount().Float64()
 			}
@@ -52,12 +81,15 @@ func (bc *BlockchainNode) CalculateTotalAmount(address values.Address) float64 {
 			}
 		}
 	}
-	return totalAmount
+	totalAmount += bc.walletInitialAmount.Float64()
+
+	return totalAmount, nil
 }
 
 func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipientAddress values.Address, value values.Amount) error {
 	tx, err := values.NewTransaction(senderWallet, recipientAddress, value)
 	if err != nil {
+		bc.logger.Error("failed to create transaction", zap.Error(err))
 		return err
 	}
 
@@ -67,7 +99,12 @@ func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipien
 		return err
 	}
 
-	if bc.CalculateTotalAmount(senderWallet.Address()) < value.Float64() {
+	totalAmount, err := bc.CalculateTotalAmount(senderWallet.Address())
+	if err != nil {
+		bc.logger.Error("failed to calculate total amount", zap.Error(err))
+		return err
+	}
+	if totalAmount < value.Float64() {
 		bc.logger.Error("insufficient funds", zap.Error(err))
 		return nil
 	}
@@ -77,38 +114,97 @@ func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipien
 }
 
 func (bc *BlockchainNode) Commit() error {
-	if bc.transactionsPool.Len() == 0 {
+	txs := bc.transactionsPool.Transactions()
+	bc.transactionsPool.Flush()
+
+	if len(txs) == 0 {
 		return fmt.Errorf("no transactions to commit")
 	}
 
-	tx, err := values.NewTransaction(blockchainWallet, bc.owner.Address(), bc.miningReward)
+	tx, err := values.NewTransaction(bc.nodeWallet, bc.owner.Address(), bc.miningReward)
 	if err != nil {
 		return err
 	}
 
-	bc.transactionsPool.Append(tx)
+	txs = append(txs, tx)
 
-	previousHash, err := bc.lastBlock().Hash()
+	lstBlock, err := bc.lastBlock()
 	if err != nil {
-		bc.logger.Error("failed to calculate previous hash", zap.Error(err))
 		return err
 	}
 
-	nonce, err := bc.repositories.ProofOfWork().Mine(previousHash, bc.transactionsPool.Transactions())
+	//previousHash, err := bc.repositories.ProofOfWork().Hash(lstBlock)
+	//if err != nil {
+	//	bc.logger.Error("failed to calculate previous hash", zap.Error(err))
+	//	return err
+	//}
+
+	block, err := bc.repositories.ProofOfWork().Mine(lstBlock.Hash(), func() []entity.Transaction {
+		var transactions = make([]entity.Transaction, len(txs))
+		for i, tx := range txs {
+			transactions[i] = tx
+		}
+		return transactions
+	}())
 	if err != nil {
 		bc.logger.Error("failed to mine block", zap.Error(err))
 		return err
 	}
 
-	newBlock := NewBlockFromValues(nonce, previousHash, bc.transactionsPool.Transactions())
+	bTxs, err := block.Transactions()
+	if err != nil {
+		bc.logger.Error("failed to get transactions from block", zap.Error(err))
+		return err
+	}
+	var transactions = make([]values.Transaction, len(bTxs))
+	for i, tx := range bTxs {
+		pk, err := tx.SenderPublicKey()
+		if err != nil {
+			bc.logger.Error("failed to get public key", zap.Error(err))
+			return err
+		}
+
+		sig, err := tx.Signature()
+		if err != nil {
+			bc.logger.Error("failed to get signature", zap.Error(err))
+			return err
+		}
+
+		transactions[i] = values.TransactionFromValues(
+			pk,
+			tx.SenderAddress(),
+			tx.RecipientAddress(),
+			tx.Amount(),
+			sig,
+		)
+	}
+
+	newBlock := &Block{
+		timestamp:    block.Timestamp(),
+		nonce:        block.Nonce(),
+		previousHash: block.PreviousHash(),
+		transactions: transactions,
+		hash:         block.Hash(),
+	}
+
+	err = bc.repositories.Blockchain().Append(newBlock)
+	if err != nil {
+		bc.logger.Error("failed to append block to blockchain", zap.Error(err))
+		return err
+	}
+
 	bc.logger.Debug("created new block", zap.Object("block", newBlock))
-	bc.chain = append(bc.chain, newBlock)
-	bc.transactionsPool.Flush()
+
 	return nil
 }
 
-func (bc *BlockchainNode) lastBlock() *Block {
-	return bc.chain[len(bc.chain)-1]
+func (bc *BlockchainNode) lastBlock() (*Block, error) {
+	blocks, err := bc.Blocks()
+	if err != nil {
+		return nil, err
+	}
+
+	return blocks[0], nil
 }
 
 func (bc *BlockchainNode) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -116,8 +212,13 @@ func (bc *BlockchainNode) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return err
 	}
 
-	if err := enc.AddArray("chain", zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
-		for _, block := range bc.chain {
+	blocks, err := bc.Blocks()
+	if err != nil {
+		return err
+	}
+
+	if err := enc.AddArray("chainCache", zapcore.ArrayMarshalerFunc(func(enc zapcore.ArrayEncoder) error {
+		for _, block := range blocks {
 			if err := enc.AppendObject(block); err != nil {
 				return err
 			}

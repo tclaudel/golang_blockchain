@@ -11,11 +11,14 @@ type Hash struct {
 	hash []byte
 }
 
-var GenesisHash = HashFromBytes([]byte("genesis hash"))
+func GenesisHash() Hash {
+	hash := sha256.Sum256([]byte("Genesis"))
+
+	return HashFromBytes(hash[:])
+}
 
 func HashFromBytes(data []byte) Hash {
-	hash := sha256.Sum256(data)
-	return Hash{hash: hash[:]}
+	return Hash{hash: data}
 }
 
 func (h Hash) String() string {

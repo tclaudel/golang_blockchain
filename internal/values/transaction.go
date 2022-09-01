@@ -16,13 +16,31 @@ type Transaction struct {
 	signature        Signature
 }
 
+func (t Transaction) SenderPublicKey() (PublicKey, error) {
+	return t.senderPublicKey, nil
+}
+
+func (t Transaction) SenderAddress() Address {
+	return t.senderAddress
+}
+
+func (t Transaction) RecipientAddress() Address {
+	return t.recipientAddress
+}
+
+func (t Transaction) Signature() (Signature, error) {
+	return t.signature, nil
+}
+
 func NewTransaction(senderWallet Wallet, recipientAddress Address, value Amount) (Transaction, error) {
 	var err error
 
 	transaction := Transaction{
+		senderPublicKey:  senderWallet.PublicKey,
 		senderAddress:    senderWallet.Address(),
 		recipientAddress: recipientAddress,
 		value:            value,
+		signature:        Signature{},
 	}
 
 	txHash, err := transaction.Hash()
@@ -36,6 +54,16 @@ func NewTransaction(senderWallet Wallet, recipientAddress Address, value Amount)
 	}
 
 	return transaction, err
+}
+
+func TransactionFromValues(senderPublicKey PublicKey, senderAddress Address, recipientAddress Address, value Amount, signature Signature) Transaction {
+	return Transaction{
+		senderPublicKey:  senderPublicKey,
+		senderAddress:    senderAddress,
+		recipientAddress: recipientAddress,
+		value:            value,
+		signature:        signature,
+	}
 }
 
 func (t Transaction) Verify(publicKey PublicKey) (bool, error) {
@@ -81,7 +109,9 @@ func (t Transaction) Amount() Amount {
 }
 
 func (t Transaction) String() string {
-	return fmt.Sprintf("%s -> %s: %s", t.senderAddress, t.recipientAddress, t.value)
+	pk, _ := t.SenderPublicKey()
+	x, y := pk.Strings()
+	return fmt.Sprintf("x: %s y: %s %s -> %s: %s", x, y, t.senderAddress, t.recipientAddress, t.value)
 }
 
 func (t Transaction) MarshalLogObject(enc zapcore.ObjectEncoder) error {

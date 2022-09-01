@@ -3,6 +3,7 @@ package values
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
+	"fmt"
 )
 
 type PrivateKey struct {
@@ -13,6 +14,10 @@ func NewPrivateKey(privateKey ecdsa.PrivateKey) PrivateKey {
 	return PrivateKey{
 		privateKey: privateKey,
 	}
+}
+
+func (p PrivateKey) String() string {
+	return fmt.Sprintf("%s", p.privateKey.D.String())
 }
 
 func (p PrivateKey) Sign(data []byte) (Signature, error) {
