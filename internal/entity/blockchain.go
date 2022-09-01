@@ -16,13 +16,13 @@ type BlockchainNode struct {
 	nodeWallet          values.Wallet
 	transactionsPool    *TransactionPool
 	logger              *zap.Logger
-	repositories        repositories.Repositories
+	repositories        repositories.ServerRepositories
 	owner               values.Wallet
 	miningReward        values.Amount
 	walletInitialAmount values.Amount
 }
 
-func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet values.Wallet, walletInitialAmount values.Amount, repositories repositories.Repositories) (*BlockchainNode, error) {
+func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet values.Wallet, walletInitialAmount values.Amount, repositories repositories.ServerRepositories) (*BlockchainNode, error) {
 	bc := &BlockchainNode{
 		nodeWallet:          nodeWallet,
 		transactionsPool:    NewTransactionPool(),

@@ -24,6 +24,12 @@ components:
   schemas:
     Block:
       type: object
+      required:
+        - timestamp
+        - nonce
+        - previous_hash
+        - hash
+        - transactions
       properties:
         timestamp:
           type: string
@@ -39,10 +45,15 @@ components:
             $ref: '#/components/schemas/Transaction'
     Transaction:
       type: object
+      required:
+        - sender
+        - recipient
+        - amount
       properties:
         sender:
           type: string
         recipient:
           type: string
         amount:
-          type: integer
+          type: number
+          format: double

@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/blockchain"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/wallet"
 )
 
@@ -47,4 +48,5 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	rootCmd.AddCommand(wallet.Cmd)
+	rootCmd.AddCommand(blockchain.Cmd)
 }

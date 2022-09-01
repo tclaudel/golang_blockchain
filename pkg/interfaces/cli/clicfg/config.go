@@ -7,26 +7,25 @@ import (
 	"github.com/tclaudel/golang_blockchain/internal/log"
 	"github.com/tclaudel/golang_blockchain/pkg/repositories"
 	"github.com/tclaudel/golang_blockchain/pkg/repositories/fs"
-	"github.com/tclaudel/golang_blockchain/pkg/repositories/memory"
 	"go.uber.org/zap"
 )
 
 var (
 	Cfg          *config.Config
 	Logger       *zap.Logger
-	Repositories repositories.Repositories
+	Repositories repositories.CliRepositories
 )
 
 func InitConfig() {
 	var err error
 
-	Cfg = config.NewConfig()
+	Cfg = config.NewCliConfig()
 	Logger, err = log.New(Cfg.Log.Format, Cfg.Log.Level)
 	if err != nil {
 		panic(err)
 	}
 
-	Repositories, err = selectRepositories(Logger, Cfg.Repositories)
+	Repositories, err = selectCliRepositories(Logger, Cfg.Repositories)
 	if err != nil {
 		panic(err)
 	}
@@ -37,32 +36,13 @@ type RepositoriesHolder struct {
 	wallet      repositories.Wallet
 }
 
-func (r *RepositoriesHolder) Blockchain() repositories.Blockchain {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (r *RepositoriesHolder) Close() error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func selectRepositories(logger *zap.Logger, cfgRepo config.Repositories) (repositories.Repositories, error) {
+func selectCliRepositories(logger *zap.Logger, cfgRepo config.CliRepositories) (repositories.CliRepositories, error) {
 	var (
 		err   error
 		repos = new(RepositoriesHolder)
 	)
 
-	switch cfgRepo.ProofOfWork.Type {
-	case "memory":
-		repos.proofOfWork, err = memory.NewProofOfWork(logger, cfgRepo.ProofOfWork.Difficulty)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		logger.Error("unknown proof of work type", zap.String("type", cfgRepo.ProofOfWork.Type))
-		return nil, errors.New("unknown proof of work type")
-	}
+	_ = err
 
 	switch cfgRepo.Wallet.Type {
 	case "filesystem":
@@ -75,11 +55,6 @@ func selectRepositories(logger *zap.Logger, cfgRepo config.Repositories) (reposi
 
 	return repos, nil
 }
-
-func (r *RepositoriesHolder) ProofOfWork() repositories.ProofOfWork {
-	return r.proofOfWork
-}
-
 func (r *RepositoriesHolder) Wallet() repositories.Wallet {
 	return r.wallet
 }

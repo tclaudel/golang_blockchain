@@ -3,9 +3,9 @@ package http
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/errors"
-	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/types"
 )
 
 func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,7 @@ func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	var blocks []*types.Block
+	var blocks []Block
 
 	bs, err := s.blockchainNode.Blocks()
 	if err != nil {
@@ -26,23 +26,23 @@ func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, block := range bs {
-		var transactions []*types.Transaction
+		var transactions []Transaction
 		txs, err := block.Transactions()
 		if err != nil {
 			errors.ErrMarshalingJSON.Write(logger, w, http.StatusInternalServerError)
 			return
 		}
 		for _, transaction := range txs {
-			transactions = append(transactions, &types.Transaction{
+			transactions = append(transactions, Transaction{
 				Sender:    transaction.SenderAddress().String(),
 				Recipient: transaction.RecipientAddress().String(),
 				Amount:    transaction.Amount().Float64(),
 			})
 		}
 
-		blocks = append(blocks, &types.Block{
+		blocks = append(blocks, Block{
 			Hash:         block.Hash().String(),
-			Timestamp:    block.Timestamp().Time(),
+			Timestamp:    block.Timestamp().Time().Format(time.RFC3339),
 			Nonce:        block.Nonce().Int(),
 			PreviousHash: block.PreviousHash().String(),
 			Transactions: transactions,

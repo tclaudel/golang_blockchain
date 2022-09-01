@@ -1,6 +1,6 @@
 BIN=bin
 
-all: build-server build-cli
+all: gen build-server build-cli
 
 build:
 
@@ -22,5 +22,8 @@ deps:
 reset:
 	rm -Rf ./data/wallet/*
 	rm -Rf ./data/blockchain/*
+
+gen:
+	oapi-codegen -package http -generate client,types ./docs/swagger.yaml > ./pkg/interfaces/http/api.gen.go
 
 .PHONY: build run-server build-server deps

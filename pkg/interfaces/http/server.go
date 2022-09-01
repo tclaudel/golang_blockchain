@@ -16,13 +16,13 @@ import (
 
 type Server struct {
 	*http.Server
-	cfg            *config.Config
+	cfg            *config.ServerConfig
 	logger         *zap.Logger
 	blockchainNode *entity.BlockchainNode
-	repositories.Repositories
+	repositories.ServerRepositories
 }
 
-func NewServer(cfg *config.Config, logger *zap.Logger, blockChainNode *entity.BlockchainNode, repositories repositories.Repositories) Server {
+func NewServer(cfg *config.ServerConfig, logger *zap.Logger, blockChainNode *entity.BlockchainNode, repositories repositories.ServerRepositories) Server {
 	server := Server{
 		&http.Server{
 			Addr:         cfg.Http.Address,
@@ -45,7 +45,7 @@ func NewServer(cfg *config.Config, logger *zap.Logger, blockChainNode *entity.Bl
 	return server
 }
 
-func (s *Server) Start(cfg *config.Config, logger *zap.Logger, errChan chan error) {
+func (s *Server) Start(cfg *config.ServerConfig, logger *zap.Logger, errChan chan error) {
 	if s.Addr == "" {
 		errChan <- errors.New("server address is missing in configuration")
 		return

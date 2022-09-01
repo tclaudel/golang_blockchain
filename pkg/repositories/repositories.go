@@ -1,8 +1,12 @@
 package repositories
 
-type Repositories interface {
+type ServerRepositories interface {
 	ProofOfWork() ProofOfWork
 	Wallet() Wallet
 	Blockchain() Blockchain
 	Close() error
+}
+
+type CliRepositories interface {
+	Wallet() Wallet
 }

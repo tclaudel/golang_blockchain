@@ -23,7 +23,7 @@ import (
 const serverTimeout = 5 * time.Second
 
 func main() {
-	cfg := config.NewConfig()
+	cfg := config.NewServerConfig()
 
 	logger, err := log.New(cfg.Log.Format, cfg.Log.Level)
 	if err != nil {
@@ -119,7 +119,7 @@ type Repositories struct {
 	blockchain  repositories.Blockchain
 }
 
-func selectRepositories(logger *zap.Logger, cfgRepo config.Repositories) (repositories.Repositories, error) {
+func selectRepositories(logger *zap.Logger, cfgRepo config.NodeRepositories) (repositories.ServerRepositories, error) {
 	var (
 		err   error
 		repos = new(Repositories)
