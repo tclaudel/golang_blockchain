@@ -43,7 +43,7 @@ func NewServerConfig() *ServerConfig {
 	if err := configor.New(&configor.Config{
 		ENVPrefix:            "GOLANG_BLOCKCHAIN",
 		Debug:                false,
-		Verbose:              false,
+		Verbose:              true,
 		AutoReload:           false,
 		ErrorOnUnmatchedKeys: true,
 	}).Load(cfg); err != nil {

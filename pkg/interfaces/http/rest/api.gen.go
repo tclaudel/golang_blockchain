@@ -130,8 +130,8 @@ type ClientInterface interface {
 	// GetBlockchain request
 	GetBlockchain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CommitTransactions request
-	CommitTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// CreateBlockFromTransactions request
+	CreateBlockFromTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTransactionsPool request
 	GetTransactionsPool(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -154,8 +154,8 @@ func (c *Client) GetBlockchain(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-func (c *Client) CommitTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCommitTransactionsRequest(c.Server)
+func (c *Client) CreateBlockFromTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBlockFromTransactionsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func NewGetBlockchainRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/blockchain")
+	operationPath := fmt.Sprintf("/blocks")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -229,8 +229,8 @@ func NewGetBlockchainRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCommitTransactionsRequest generates requests for CommitTransactions
-func NewCommitTransactionsRequest(server string) (*http.Request, error) {
+// NewCreateBlockFromTransactionsRequest generates requests for CreateBlockFromTransactions
+func NewCreateBlockFromTransactionsRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -238,7 +238,7 @@ func NewCommitTransactionsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/blockchain")
+	operationPath := fmt.Sprintf("/blocks")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -369,8 +369,8 @@ type ClientWithResponsesInterface interface {
 	// GetBlockchain request
 	GetBlockchainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBlockchainResponse, error)
 
-	// CommitTransactions request
-	CommitTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CommitTransactionsResponse, error)
+	// CreateBlockFromTransactions request
+	CreateBlockFromTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateBlockFromTransactionsResponse, error)
 
 	// GetTransactionsPool request
 	GetTransactionsPoolWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTransactionsPoolResponse, error)
@@ -405,7 +405,7 @@ func (r GetBlockchainResponse) StatusCode() int {
 	return 0
 }
 
-type CommitTransactionsResponse struct {
+type CreateBlockFromTransactionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Block
@@ -414,7 +414,7 @@ type CommitTransactionsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r CommitTransactionsResponse) Status() string {
+func (r CreateBlockFromTransactionsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -422,7 +422,7 @@ func (r CommitTransactionsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CommitTransactionsResponse) StatusCode() int {
+func (r CreateBlockFromTransactionsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -487,13 +487,13 @@ func (c *ClientWithResponses) GetBlockchainWithResponse(ctx context.Context, req
 	return ParseGetBlockchainResponse(rsp)
 }
 
-// CommitTransactionsWithResponse request returning *CommitTransactionsResponse
-func (c *ClientWithResponses) CommitTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CommitTransactionsResponse, error) {
-	rsp, err := c.CommitTransactions(ctx, reqEditors...)
+// CreateBlockFromTransactionsWithResponse request returning *CreateBlockFromTransactionsResponse
+func (c *ClientWithResponses) CreateBlockFromTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateBlockFromTransactionsResponse, error) {
+	rsp, err := c.CreateBlockFromTransactions(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCommitTransactionsResponse(rsp)
+	return ParseCreateBlockFromTransactionsResponse(rsp)
 }
 
 // GetTransactionsPoolWithResponse request returning *GetTransactionsPoolResponse
@@ -562,15 +562,15 @@ func ParseGetBlockchainResponse(rsp *http.Response) (*GetBlockchainResponse, err
 	return response, nil
 }
 
-// ParseCommitTransactionsResponse parses an HTTP response from a CommitTransactionsWithResponse call
-func ParseCommitTransactionsResponse(rsp *http.Response) (*CommitTransactionsResponse, error) {
+// ParseCreateBlockFromTransactionsResponse parses an HTTP response from a CreateBlockFromTransactionsWithResponse call
+func ParseCreateBlockFromTransactionsResponse(rsp *http.Response) (*CreateBlockFromTransactionsResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &CommitTransactionsResponse{
+	response := &CreateBlockFromTransactionsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

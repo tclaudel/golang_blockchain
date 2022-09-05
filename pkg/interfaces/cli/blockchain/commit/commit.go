@@ -24,7 +24,7 @@ var (
 				clicfg.Logger.Fatal("failed to create client", zap.Error(err))
 			}
 
-			resp, err := client.CommitTransactionsWithResponse(ctx)
+			resp, err := client.CreateBlockFromTransactionsWithResponse(ctx)
 			if err != nil {
 				clicfg.Logger.Fatal("failed to commit transactions", zap.Error(err))
 			}

@@ -26,7 +26,7 @@ func NewCliConfig() *Config {
 	if err := configor.New(&configor.Config{
 		ENVPrefix:            "GOLANG_BLOCKCHAIN_CLI",
 		Debug:                false,
-		Verbose:              false,
+		Verbose:              true,
 		AutoReload:           false,
 		ErrorOnUnmatchedKeys: true,
 	}).Load(cfg); err != nil {

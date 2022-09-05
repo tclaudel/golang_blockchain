@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'http://localhost:8080/'
 paths:
-  /blockchain:
+  /blocks:
     get:
       summary: Get blockchain
       operationId: getBlockchain
@@ -33,8 +33,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
     post:
-      summary: commit transactions
-      operationId: commitTransactions
+      summary: commit transaction pool to create a new block
+      operationId: createBlockFromTransactions
       responses:
         '200':
           description: Success

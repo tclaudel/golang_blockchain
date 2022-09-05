@@ -49,7 +49,7 @@ func main() {
 		nodeWallet,
 		logger,
 		ownerWallet,
-		values.AmountFromFloat64(cfg.Repositories.Wallet.InitialAmount),
+		values.AmountFromFloat64(cfg.Repositories.Wallet.MiningReward),
 		repositories,
 	)
 
