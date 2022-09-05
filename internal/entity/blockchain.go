@@ -118,8 +118,7 @@ func (bc *BlockchainNode) AppendTransaction(
 }
 
 func (bc *BlockchainNode) Commit() (*Block, error) {
-	txs := bc.transactionsPool.Transactions()
-	bc.transactionsPool.Flush()
+	txs := bc.transactionsPool.Export()
 
 	if len(txs) == 0 {
 		return nil, fmt.Errorf("no transactions to commit")

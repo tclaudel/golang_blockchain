@@ -2,12 +2,14 @@ package entity
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/tclaudel/golang_blockchain/internal/values"
 	"go.uber.org/zap/zapcore"
 )
 
 type TransactionPool struct {
+	sync.Mutex
 	transactions []values.Transaction
 }
 
@@ -29,10 +31,13 @@ func (tp *TransactionPool) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func (tp *TransactionPool) Copy() []values.Transaction {
+func (tp *TransactionPool) Export() []values.Transaction {
+	tp.Lock()
 	dst := make([]values.Transaction, len(tp.transactions))
 	copy(dst, tp.transactions)
 
+	tp.transactions = nil
+	tp.Unlock()
 	return dst
 }
 
@@ -40,10 +45,8 @@ func (tp *TransactionPool) Transactions() []values.Transaction {
 	return tp.transactions
 }
 
-func (tp *TransactionPool) Flush() {
-	tp.transactions = nil
-}
-
 func (tp *TransactionPool) Append(transaction values.Transaction) {
+	tp.Lock()
 	tp.transactions = append(tp.transactions, transaction)
+	tp.Unlock()
 }
