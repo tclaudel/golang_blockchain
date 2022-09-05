@@ -46,6 +46,7 @@ The blockchain node needs some environment variables to be configured:
 - `GOLANG_BLOCKCHAIN_REPOSITORIES_PROOFOFWORK_TYPE` (default: `memory`): the type of the proof of work repository
 - `GOLANG_BLOCKCHAIN_REPOSITORIES_PROOFOFWORK_DIFFICULTY` (default: `3`): the difficulty of the proof of work
   (2: easiest, 3: easy, 4: medium, 5: hard)
+- `GOLANG_BLOCKCHAIN_REPOSITORIES_PROOFOFWORK_FREQUENCY` (default: `10s`): the frequency of the proof of work
 - `GOLANG_BLOCKCHAIN_REPOSITORIES_BLOCKCHAIN_TYPE` (default: `badger`): the type of the blockchain repository
 - `GOLANG_BLOCKCHAIN_REPOSITORIES_BLOCKCHAIN_BADGER_PATH` (default: `./data/blockchain`): the path of the badger database files
 - `GOLANG_BLOCKCHAIN_REPOSITORIES_BLOCKCHAIN_BADGER_LOGGER` (default: `false`): toggles badger logging

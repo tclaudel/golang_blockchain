@@ -21,8 +21,8 @@ var (
 
 var (
 	Cmd = &cobra.Command{
-		Use:   "new",
-		Short: "new transaction",
+		Use:   "create",
+		Short: "create transaction",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
@@ -93,7 +93,6 @@ var (
 			case 500:
 				clicfg.Logger.Fatal(resp.JSON500.Message, zap.Int("errorCode", resp.JSON500.ErrCode))
 			}
-
 			data, err := json.MarshalIndent(resp.JSON200, "", "  ")
 			if err != nil {
 				clicfg.Logger.Fatal("Unable to serialize transaction", zap.Error(err))

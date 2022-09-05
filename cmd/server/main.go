@@ -51,12 +51,17 @@ func main() {
 		ownerWallet,
 		values.AmountFromFloat64(cfg.Repositories.Wallet.MiningReward),
 		repositories,
+		cfg.Repositories.ProofOfWork.Frequency,
 	)
 
 	httpServer := http.NewServer(cfg, logger, blockchainNode, repositories)
 
 	var stop = make(chan error, 1)
 	go httpServer.Start(cfg, logger, stop)
+	go func() {
+		time.Sleep(cfg.Repositories.ProofOfWork.Frequency)
+		blockchainNode.CronMining()
+	}()
 
 	go func() {
 		sig := make(chan os.Signal, 1)

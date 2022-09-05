@@ -1,0 +1,25 @@
+version: "3.0"
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  node:
+    container_name: node
+    build:
+      context: ../
+      dockerfile: ./deployment/Dockerfile
+    environment:
+      - "AUTHORIZATION_SERVICE_HTTP_ADDRESS=8080"
+      - "AUTHORIZATION_SERVICE_LOG_FORMAT=debug"
+      - "AUTHORIZATION_SERVICE_LOG_LEVEL=debug"
+      - "AUTHORIZATION_SERVICE_ACCESSCONTROLLISTREPOSITORY_TYPE=inmemory"
+      - "AUTHORIZATION_SERVICE_METRICS_ENABLED=false"
+    ports:
+      - "8093:8080"
+    networks:
+      - backend
+
+
+
