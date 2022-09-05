@@ -53,47 +53,6 @@ func main() {
 		repositories,
 	)
 
-	userAWallet := values.NewWallet(values.IdentifierFromString("A"))
-	repositories.Wallet().Save(userAWallet)
-	userBWallet := values.NewWallet(values.IdentifierFromString("B"))
-
-	err = blockchainNode.AppendTransaction(userAWallet, ownerWallet.Address(), values.AmountFromFloat64(10))
-	if err != nil {
-		panic(err)
-	}
-
-	err = blockchainNode.AppendTransaction(userBWallet, ownerWallet.Address(), values.AmountFromFloat64(10))
-	if err != nil {
-		panic(err)
-	}
-
-	err = blockchainNode.Commit()
-	if err != nil {
-		panic(err)
-	}
-
-	err = blockchainNode.AppendTransaction(userAWallet, ownerWallet.Address(), values.AmountFromFloat64(10))
-	if err != nil {
-		panic(err)
-	}
-
-	err = blockchainNode.AppendTransaction(userBWallet, ownerWallet.Address(), values.AmountFromFloat64(10))
-	if err != nil {
-		panic(err)
-	}
-
-	err = blockchainNode.Commit()
-	if err != nil {
-		panic(err)
-	}
-
-	ownerAmount, _ := blockchainNode.CalculateTotalAmount(ownerWallet.Address())
-	userAAmount, _ := blockchainNode.CalculateTotalAmount(userAWallet.Address())
-	userBAmount, _ := blockchainNode.CalculateTotalAmount(userBWallet.Address())
-	logger.Info("total amount of owner", zap.Float64("amount", ownerAmount))
-	logger.Info("total amount of user A", zap.Float64("amount", userAAmount))
-	logger.Info("total amount of user B", zap.Float64("amount", userBAmount))
-
 	httpServer := http.NewServer(cfg, logger, blockchainNode, repositories)
 
 	var stop = make(chan error, 1)

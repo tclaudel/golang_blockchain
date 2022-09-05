@@ -1,6 +1,7 @@
 package flags
 
 var (
-	Path     string
-	Filename string
+	Path       string
+	Filename   string
+	WalletPath string
 )

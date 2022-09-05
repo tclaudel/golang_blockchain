@@ -31,6 +31,11 @@ type Transaction struct {
 	TRecipientAddress string    `json:"recipient_address"`
 	TAmount           float64   `json:"amount"`
 	TSignature        Signature `json:"signature"`
+	TTimestamp        time.Time `json:"timestamp"`
+}
+
+func (t Transaction) Timestamp() (values.Timestamp, error) {
+	return values.TimestampFromTime(t.TTimestamp), nil
 }
 
 func (t Transaction) SenderPublicKey() (values.PublicKey, error) {
@@ -104,7 +109,13 @@ func (b Block) Transactions() ([]values.Transaction, error) {
 			return nil, err
 		}
 
+		t, err := transaction.Timestamp()
+		if err != nil {
+			return nil, err
+		}
+
 		transactions[i] = values.TransactionFromValues(
+			t,
 			pk,
 			transaction.SenderAddress(),
 			transaction.RecipientAddress(),
@@ -214,6 +225,12 @@ func (b BlockchainRepository) Append(entityBlock entity.Block) error {
 					return nil
 				}
 
+				t, err := transaction.Timestamp()
+				if err != nil {
+					b.logger.Error("failed to get TTimestamp from transaction", zap.Error(err))
+					return nil
+				}
+
 				pkX, pkY := pk.Strings()
 				sigR, sigS := sig.Strings()
 				transactions[i] = Transaction{
@@ -228,6 +245,7 @@ func (b BlockchainRepository) Append(entityBlock entity.Block) error {
 						SigR: sigR,
 						SigS: sigS,
 					},
+					TTimestamp: t.Time(),
 				}
 			}
 

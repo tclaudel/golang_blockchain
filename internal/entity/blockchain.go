@@ -86,31 +86,31 @@ func (bc *BlockchainNode) CalculateTotalAmount(address values.Address) (float64,
 	return totalAmount, nil
 }
 
-func (bc *BlockchainNode) AppendTransaction(senderWallet values.Wallet, recipientAddress values.Address, value values.Amount) error {
-	tx, err := values.NewTransaction(senderWallet, recipientAddress, value)
+func (bc *BlockchainNode) AppendTransaction(
+	t values.Timestamp,
+	senderPublicKey values.PublicKey,
+	senderAddress values.Address,
+	recipientAddress values.Address,
+	value values.Amount,
+	sig values.Signature) (values.Transaction, error) {
+	tx, err := values.VerifyTransaction(t, senderPublicKey, senderAddress, recipientAddress, value, sig)
 	if err != nil {
 		bc.logger.Error("failed to create transaction", zap.Error(err))
-		return err
+		return values.Transaction{}, err
 	}
 
-	verified, err := tx.Verify(senderWallet.PublicKey)
-	if !verified {
-		bc.logger.Error("transaction verification failed", zap.Error(err))
-		return err
-	}
-
-	totalAmount, err := bc.CalculateTotalAmount(senderWallet.Address())
+	totalAmount, err := bc.CalculateTotalAmount(senderAddress)
 	if err != nil {
 		bc.logger.Error("failed to calculate total amount", zap.Error(err))
-		return err
+		return values.Transaction{}, err
 	}
 	if totalAmount < value.Float64() {
 		bc.logger.Error("insufficient funds", zap.Error(err))
-		return nil
+		return values.Transaction{}, nil
 	}
 
 	bc.transactionsPool.Append(tx)
-	return nil
+	return tx, nil
 }
 
 func (bc *BlockchainNode) Commit() error {
@@ -132,12 +132,6 @@ func (bc *BlockchainNode) Commit() error {
 	if err != nil {
 		return err
 	}
-
-	//previousHash, err := bc.repositories.ProofOfWork().Hash(lstBlock)
-	//if err != nil {
-	//	bc.logger.Error("failed to calculate previous hash", zap.Error(err))
-	//	return err
-	//}
 
 	block, err := bc.repositories.ProofOfWork().Mine(lstBlock.Hash(), func() []entity.Transaction {
 		var transactions = make([]entity.Transaction, len(txs))
@@ -170,7 +164,14 @@ func (bc *BlockchainNode) Commit() error {
 			return err
 		}
 
+		t, err := tx.Timestamp()
+		if err != nil {
+			bc.logger.Error("failed to get timestamp", zap.Error(err))
+			return err
+		}
+
 		transactions[i] = values.TransactionFromValues(
+			t,
 			pk,
 			tx.SenderAddress(),
 			tx.RecipientAddress(),

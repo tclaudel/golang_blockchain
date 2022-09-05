@@ -17,6 +17,7 @@ type Transaction struct {
 	recipientAddress values.Address
 	amount           values.Amount
 	signature        values.Signature
+	timestamp        values.Timestamp
 }
 
 func (t Transaction) SenderPublicKey() (values.PublicKey, error) {
@@ -37,6 +38,10 @@ func (t Transaction) Amount() values.Amount {
 
 func (t Transaction) Signature() (values.Signature, error) {
 	return t.signature, nil
+}
+
+func (t Transaction) Timestamp() (values.Timestamp, error) {
+	return values.TimestampNow(), nil
 }
 
 type Block struct {
@@ -66,7 +71,13 @@ func (b *Block) Hash() values.Hash {
 func (b *Block) Transactions() ([]values.Transaction, error) {
 	var transactions = make([]values.Transaction, len(b.transactions))
 	for i, transaction := range b.transactions {
+		t, err := transaction.Timestamp()
+		if err != nil {
+			return nil, err
+		}
+
 		transactions[i] = values.TransactionFromValues(
+			t,
 			transaction.senderPublicKey,
 			transaction.senderAddress,
 			transaction.recipientAddress,

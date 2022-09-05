@@ -7,5 +7,6 @@ type Transaction interface {
 	SenderAddress() values.Address
 	RecipientAddress() values.Address
 	Amount() values.Amount
+	Timestamp() (values.Timestamp, error)
 	Signature() (values.Signature, error)
 }

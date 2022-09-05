@@ -12,17 +12,16 @@ type Wallet struct {
 
 func NewWallet(identifier Identifier) Wallet {
 	keyPair := GenerateKeyPair()
-	address := GenerateAddress(keyPair)
 
 	wallet := Wallet{
 		identifier: IdentifierFromString(func() string {
 			if identifier.String() == "" {
-				return address.String()
+				return keyPair.Address().String()
 			}
 			return identifier.String()
 		}()),
 		KeyPair: keyPair,
-		address: address,
+		address: keyPair.Address(),
 	}
 
 	return wallet
@@ -59,5 +58,5 @@ func (w *Wallet) UnmarshalJSON(data []byte) error {
 }
 
 func (w Wallet) Address() Address {
-	return w.address
+	return w.PublicKey.Address()
 }

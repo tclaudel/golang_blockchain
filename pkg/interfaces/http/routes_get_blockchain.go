@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/errors"
+	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/rest"
 )
 
 func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
@@ -16,9 +17,7 @@ func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	var blocks []Block
+	var blocks []rest.Block
 
 	bs, err := s.blockchainNode.Blocks()
 	if err != nil {
@@ -26,21 +25,21 @@ func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, block := range bs {
-		var transactions []Transaction
+		var transactions []rest.Transaction
 		txs, err := block.Transactions()
 		if err != nil {
 			errors.ErrMarshalingJSON.Write(logger, w, http.StatusInternalServerError)
 			return
 		}
 		for _, transaction := range txs {
-			transactions = append(transactions, Transaction{
+			transactions = append(transactions, rest.Transaction{
 				Sender:    transaction.SenderAddress().String(),
 				Recipient: transaction.RecipientAddress().String(),
 				Amount:    transaction.Amount().Float64(),
 			})
 		}
 
-		blocks = append(blocks, Block{
+		blocks = append(blocks, rest.Block{
 			Hash:         block.Hash().String(),
 			Timestamp:    block.Timestamp().Time().Format(time.RFC3339),
 			Nonce:        block.Nonce().Int(),
@@ -53,6 +52,9 @@ func (s *Server) GetBlockchain(w http.ResponseWriter, r *http.Request) {
 		errors.ErrMarshalingJSON.Write(logger, w, http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 	return
 }

@@ -81,7 +81,7 @@ func (b *Block) FromEntity(block entity.Block) error {
 		return err
 	}
 	for _, txEntity := range txs {
-		pkKey, err := txEntity.SenderPublicKey()
+		pk, err := txEntity.SenderPublicKey()
 		if err != nil {
 			return err
 		}
@@ -91,8 +91,14 @@ func (b *Block) FromEntity(block entity.Block) error {
 			return err
 		}
 
+		t, err := txEntity.Timestamp()
+		if err != nil {
+			return err
+		}
+
 		transactions = append(transactions, values.TransactionFromValues(
-			pkKey,
+			t,
+			pk,
 			txEntity.SenderAddress(),
 			txEntity.RecipientAddress(),
 			txEntity.Amount(),

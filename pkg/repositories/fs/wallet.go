@@ -46,20 +46,25 @@ func (w WalletRepository) Save(wallet values.Wallet) error {
 	return nil
 }
 
-func (w WalletRepository) BatchSave(wallets []values.Wallet) error {
-	for _, wallet := range wallets {
-		err := w.Save(wallet)
-		if err != nil {
-			return err
-		}
+func (w WalletRepository) Load(identifier string) (values.Wallet, error) {
+	path := filepath.Join(w.path, identifier)
+	if filepath.Ext(path) != ".json" {
+		path += ".json"
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		w.logger.Error("failed to read wallet", zap.Error(err))
+		return values.Wallet{}, err
 	}
 
-	return nil
-}
+	wallet := values.Wallet{}
+	err = json.Unmarshal(data, &wallet)
+	if err != nil {
+		w.logger.Error("failed to deserialize wallet", zap.Error(err))
+		return values.Wallet{}, err
+	}
 
-func (w WalletRepository) Load(wallets []values.Wallet) error {
-	//TODO implement me
-	panic("implement me")
+	return wallet, nil
 }
 
 func NewWalletRepository(logger *zap.Logger, cfg config.Wallet) repositories.Wallet {

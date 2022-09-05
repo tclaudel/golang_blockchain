@@ -3,6 +3,7 @@ package values
 import (
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 type Signature struct {
@@ -29,8 +30,17 @@ func SignatureFromStrings(r, s string) (Signature, error) {
 	}, nil
 }
 
+func SignatureFromString(data string) (Signature, error) {
+	fields := strings.Split(data, sep)
+	if len(fields) != 2 {
+		return Signature{}, fmt.Errorf("invalid data")
+	}
+
+	return SignatureFromStrings(fields[0], fields[1])
+}
+
 func (sig Signature) String() string {
-	return fmt.Sprintf("%s%s", sig.r.String(), sig.s.String())
+	return fmt.Sprintf("%s%s%s", sig.r.String(), sep, sig.s.String())
 }
 
 func (sig Signature) Strings() (r string, s string) {

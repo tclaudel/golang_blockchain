@@ -19,9 +19,81 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Block'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /transactions:
+    post:
+      summary: Create Transaction
+      operationId: CreateTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
+    TransactionRequest:
+      type: object
+      required:
+        - timestamp
+        - sender_public_key
+        - sender_address
+        - recipient_address
+        - amount
+        - signature
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        sender_public_key:
+          type: string
+        sender_address:
+          type: string
+        recipient_address:
+          type: string
+        amount:
+          type: number
+          format: double
+        signature:
+          type: string
+
     Block:
       type: object
       required:
@@ -57,3 +129,13 @@ components:
         amount:
           type: number
           format: double
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - err_code
+      properties:
+        err_code:
+          type: integer
+        message:
+          type: string

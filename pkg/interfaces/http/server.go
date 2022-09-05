@@ -39,6 +39,7 @@ func NewServer(cfg *config.ServerConfig, logger *zap.Logger, blockChainNode *ent
 	r.Use(NewMiddlewareRequestID(logger))
 	r.Use(NewMiddlewareRequestLogger(logger))
 	r.HandleFunc("/blockchain", server.GetBlockchain).Methods(http.MethodGet)
+	r.HandleFunc("/transactions", server.PostTransaction).Methods(http.MethodPost)
 
 	server.Handler = r
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/blockchain"
+	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/transaction"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/wallet"
 )
 
@@ -49,4 +50,5 @@ func init() {
 
 	rootCmd.AddCommand(wallet.Cmd)
 	rootCmd.AddCommand(blockchain.Cmd)
+	rootCmd.AddCommand(transaction.Cmd)
 }

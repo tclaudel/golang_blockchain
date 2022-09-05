@@ -24,6 +24,6 @@ reset:
 	rm -Rf ./data/blockchain/*
 
 gen:
-	oapi-codegen -package http -generate client,types ./docs/swagger.yaml > ./pkg/interfaces/http/api.gen.go
+	oapi-codegen -package rest -generate client,types ./docs/swagger.yaml > ./pkg/interfaces/http/rest/api.gen.go
 
 .PHONY: build run-server build-server deps
