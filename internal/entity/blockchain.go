@@ -37,6 +37,10 @@ func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet valu
 	return bc, nil
 }
 
+func (bc *BlockchainNode) TransactionPool() []values.Transaction {
+	return bc.transactionsPool.Transactions()
+}
+
 func (bc *BlockchainNode) Blocks() ([]*Block, error) {
 	chain, err := bc.repositories.Blockchain().Get()
 	if err != nil {
@@ -113,24 +117,24 @@ func (bc *BlockchainNode) AppendTransaction(
 	return tx, nil
 }
 
-func (bc *BlockchainNode) Commit() error {
+func (bc *BlockchainNode) Commit() (*Block, error) {
 	txs := bc.transactionsPool.Transactions()
 	bc.transactionsPool.Flush()
 
 	if len(txs) == 0 {
-		return fmt.Errorf("no transactions to commit")
+		return nil, fmt.Errorf("no transactions to commit")
 	}
 
 	tx, err := values.NewTransaction(bc.nodeWallet, bc.owner.Address(), bc.miningReward)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	txs = append(txs, tx)
 
 	lstBlock, err := bc.lastBlock()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	block, err := bc.repositories.ProofOfWork().Mine(lstBlock.Hash(), func() []entity.Transaction {
@@ -142,32 +146,32 @@ func (bc *BlockchainNode) Commit() error {
 	}())
 	if err != nil {
 		bc.logger.Error("failed to mine block", zap.Error(err))
-		return err
+		return nil, err
 	}
 
 	bTxs, err := block.Transactions()
 	if err != nil {
 		bc.logger.Error("failed to get transactions from block", zap.Error(err))
-		return err
+		return nil, err
 	}
 	var transactions = make([]values.Transaction, len(bTxs))
 	for i, tx := range bTxs {
 		pk, err := tx.SenderPublicKey()
 		if err != nil {
 			bc.logger.Error("failed to get public key", zap.Error(err))
-			return err
+			return nil, err
 		}
 
 		sig, err := tx.Signature()
 		if err != nil {
 			bc.logger.Error("failed to get signature", zap.Error(err))
-			return err
+			return nil, err
 		}
 
 		t, err := tx.Timestamp()
 		if err != nil {
 			bc.logger.Error("failed to get timestamp", zap.Error(err))
-			return err
+			return nil, err
 		}
 
 		transactions[i] = values.TransactionFromValues(
@@ -191,12 +195,12 @@ func (bc *BlockchainNode) Commit() error {
 	err = bc.repositories.Blockchain().Append(newBlock)
 	if err != nil {
 		bc.logger.Error("failed to append block to blockchain", zap.Error(err))
-		return err
+		return nil, err
 	}
 
 	bc.logger.Debug("created new block", zap.Object("block", newBlock))
 
-	return nil
+	return newBlock, nil
 }
 
 func (bc *BlockchainNode) lastBlock() (*Block, error) {

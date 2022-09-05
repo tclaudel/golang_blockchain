@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/tclaudel/golang_blockchain/internal/values"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/errors"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/rest"
@@ -23,8 +22,6 @@ func (s *Server) PostTransaction(w http.ResponseWriter, r *http.Request) {
 		errors.ErrMarshalingJSON.Write(logger, w, http.StatusBadRequest)
 		return
 	}
-
-	spew.Dump(transaction)
 
 	pk, err := values.PublicKeyFromString(transaction.SenderPublicKey)
 	if err != nil {

@@ -130,6 +130,12 @@ type ClientInterface interface {
 	// GetBlockchain request
 	GetBlockchain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CommitTransactions request
+	CommitTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetTransactionsPool request
+	GetTransactionsPool(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateTransaction request with any body
 	CreateTransactionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -138,6 +144,30 @@ type ClientInterface interface {
 
 func (c *Client) GetBlockchain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBlockchainRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CommitTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCommitTransactionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTransactionsPool(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTransactionsPoolRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +212,60 @@ func NewGetBlockchainRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/blockchain")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCommitTransactionsRequest generates requests for CommitTransactions
+func NewCommitTransactionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/blockchain")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetTransactionsPoolRequest generates requests for GetTransactionsPool
+func NewGetTransactionsPoolRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/transactions")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -285,6 +369,12 @@ type ClientWithResponsesInterface interface {
 	// GetBlockchain request
 	GetBlockchainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBlockchainResponse, error)
 
+	// CommitTransactions request
+	CommitTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CommitTransactionsResponse, error)
+
+	// GetTransactionsPool request
+	GetTransactionsPoolWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTransactionsPoolResponse, error)
+
 	// CreateTransaction request with any body
 	CreateTransactionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTransactionResponse, error)
 
@@ -309,6 +399,54 @@ func (r GetBlockchainResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetBlockchainResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CommitTransactionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Block
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CommitTransactionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CommitTransactionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetTransactionsPoolResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Transaction
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTransactionsPoolResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTransactionsPoolResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -349,6 +487,24 @@ func (c *ClientWithResponses) GetBlockchainWithResponse(ctx context.Context, req
 	return ParseGetBlockchainResponse(rsp)
 }
 
+// CommitTransactionsWithResponse request returning *CommitTransactionsResponse
+func (c *ClientWithResponses) CommitTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CommitTransactionsResponse, error) {
+	rsp, err := c.CommitTransactions(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCommitTransactionsResponse(rsp)
+}
+
+// GetTransactionsPoolWithResponse request returning *GetTransactionsPoolResponse
+func (c *ClientWithResponses) GetTransactionsPoolWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTransactionsPoolResponse, error) {
+	rsp, err := c.GetTransactionsPool(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTransactionsPoolResponse(rsp)
+}
+
 // CreateTransactionWithBodyWithResponse request with arbitrary body returning *CreateTransactionResponse
 func (c *ClientWithResponses) CreateTransactionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTransactionResponse, error) {
 	rsp, err := c.CreateTransactionWithBody(ctx, contentType, body, reqEditors...)
@@ -382,6 +538,86 @@ func ParseGetBlockchainResponse(rsp *http.Response) (*GetBlockchainResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest []Block
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCommitTransactionsResponse parses an HTTP response from a CommitTransactionsWithResponse call
+func ParseCommitTransactionsResponse(rsp *http.Response) (*CommitTransactionsResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CommitTransactionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Block
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetTransactionsPoolResponse parses an HTTP response from a GetTransactionsPoolWithResponse call
+func ParseGetTransactionsPoolResponse(rsp *http.Response) (*GetTransactionsPoolResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTransactionsPoolResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Transaction
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

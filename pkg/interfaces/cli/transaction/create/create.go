@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cobra"
 	"github.com/tclaudel/golang_blockchain/internal/values"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/clicfg"
@@ -65,16 +64,20 @@ var (
 				clicfg.Logger.Fatal("failed to create client", zap.Error(err))
 			}
 
+			ts, err := tx.Timestamp()
+			if err != nil {
+				clicfg.Logger.Fatal("failed to get timestamp", zap.Error(err))
+			}
+
 			transaction := rest.CreateTransactionJSONRequestBody{
 				Amount:           amount,
 				RecipientAddress: receiverAddress,
 				SenderAddress:    tx.SenderAddress().String(),
 				SenderPublicKey:  pk.String(),
 				Signature:        sig.String(),
-				Timestamp:        values.TimestampNow().Time(),
+				Timestamp:        ts.Time(),
 			}
 
-			spew.Dump(transaction)
 			resp, err := client.CreateTransactionWithResponse(ctx, transaction)
 			if err != nil {
 				clicfg.Logger.Fatal("failed to create transaction", zap.Error(err))

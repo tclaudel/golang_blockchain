@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/blockchain/commit"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/clicfg"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/rest"
 	"go.uber.org/zap"
@@ -48,4 +49,6 @@ var (
 	}
 )
 
-func init() {}
+func init() {
+	Cmd.AddCommand(commit.Cmd)
+}

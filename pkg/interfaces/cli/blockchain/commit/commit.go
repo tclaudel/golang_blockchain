@@ -1,4 +1,4 @@
-package transaction
+package commit
 
 import (
 	"context"
@@ -7,15 +7,14 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/clicfg"
-	"github.com/tclaudel/golang_blockchain/pkg/interfaces/cli/transaction/create"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/rest"
 	"go.uber.org/zap"
 )
 
 var (
 	Cmd = &cobra.Command{
-		Use:   "transaction",
-		Short: "Manage transactions",
+		Use:   "commit",
+		Short: "Commit transactions",
 		Long:  "",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
@@ -25,9 +24,9 @@ var (
 				clicfg.Logger.Fatal("failed to create client", zap.Error(err))
 			}
 
-			resp, err := client.GetTransactionsPoolWithResponse(ctx)
+			resp, err := client.CommitTransactionsWithResponse(ctx)
 			if err != nil {
-				clicfg.Logger.Fatal("failed to get transactions pool", zap.Error(err))
+				clicfg.Logger.Fatal("failed to commit transactions", zap.Error(err))
 			}
 
 			switch resp.StatusCode() {
@@ -41,6 +40,8 @@ var (
 				clicfg.Logger.Fatal(resp.JSON400.Message, zap.Int("errorCode", resp.JSON400.ErrCode))
 			}
 
+			clicfg.Logger.Info("Transactions committed")
+
 			data, err := json.MarshalIndent(resp.JSON200, "", " ")
 			if err != nil {
 				clicfg.Logger.Fatal("failed to serialize transactions pool", zap.Error(err))
@@ -50,9 +51,3 @@ var (
 		},
 	}
 )
-
-func init() {
-	Cmd.AddCommand(
-		create.Cmd,
-	)
-}

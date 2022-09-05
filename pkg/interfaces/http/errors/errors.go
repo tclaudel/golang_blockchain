@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/tclaudel/golang_blockchain/pkg/interfaces/http/rest"
 	"go.uber.org/zap"
 )
@@ -58,8 +57,7 @@ func (e HttpError) Write(logger *zap.Logger, w http.ResponseWriter, httpCode int
 	logger.Error(e.message, zap.Int("code", e.code.code), zap.String("repository", "http"))
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpCode)
-	data, err := json.Marshal(e)
-	spew.Dump(data, err)
+	data, _ := json.Marshal(e)
 	w.Write(data)
 }
 
