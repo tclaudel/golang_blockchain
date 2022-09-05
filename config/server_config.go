@@ -2,13 +2,15 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/configor"
 )
 
 type ProofOfWork struct {
-	Type       string `default:"memory"`
-	Difficulty int    `default:"3"`
+	Type       string        `default:"memory"`
+	Difficulty int           `default:"3"`
+	Frequency  time.Duration `default:"10s"`
 }
 
 type Http struct {
@@ -43,7 +45,7 @@ func NewServerConfig() *ServerConfig {
 	if err := configor.New(&configor.Config{
 		ENVPrefix:            "GOLANG_BLOCKCHAIN",
 		Debug:                false,
-		Verbose:              true,
+		Verbose:              false,
 		AutoReload:           false,
 		ErrorOnUnmatchedKeys: true,
 	}).Load(cfg); err != nil {

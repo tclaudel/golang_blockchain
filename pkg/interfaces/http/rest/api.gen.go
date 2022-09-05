@@ -130,9 +130,6 @@ type ClientInterface interface {
 	// GetBlockchain request
 	GetBlockchain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBlockFromTransactions request
-	CreateBlockFromTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetTransactionsPool request
 	GetTransactionsPool(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -144,18 +141,6 @@ type ClientInterface interface {
 
 func (c *Client) GetBlockchain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBlockchainRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateBlockFromTransactions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBlockFromTransactionsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -222,33 +207,6 @@ func NewGetBlockchainRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateBlockFromTransactionsRequest generates requests for CreateBlockFromTransactions
-func NewCreateBlockFromTransactionsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/blocks")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -369,9 +327,6 @@ type ClientWithResponsesInterface interface {
 	// GetBlockchain request
 	GetBlockchainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBlockchainResponse, error)
 
-	// CreateBlockFromTransactions request
-	CreateBlockFromTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateBlockFromTransactionsResponse, error)
-
 	// GetTransactionsPool request
 	GetTransactionsPoolWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTransactionsPoolResponse, error)
 
@@ -399,30 +354,6 @@ func (r GetBlockchainResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetBlockchainResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateBlockFromTransactionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Block
-	JSON400      *ErrorResponse
-	JSON500      *ErrorResponse
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateBlockFromTransactionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateBlockFromTransactionsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -487,15 +418,6 @@ func (c *ClientWithResponses) GetBlockchainWithResponse(ctx context.Context, req
 	return ParseGetBlockchainResponse(rsp)
 }
 
-// CreateBlockFromTransactionsWithResponse request returning *CreateBlockFromTransactionsResponse
-func (c *ClientWithResponses) CreateBlockFromTransactionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateBlockFromTransactionsResponse, error) {
-	rsp, err := c.CreateBlockFromTransactions(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBlockFromTransactionsResponse(rsp)
-}
-
 // GetTransactionsPoolWithResponse request returning *GetTransactionsPoolResponse
 func (c *ClientWithResponses) GetTransactionsPoolWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTransactionsPoolResponse, error) {
 	rsp, err := c.GetTransactionsPool(ctx, reqEditors...)
@@ -538,46 +460,6 @@ func ParseGetBlockchainResponse(rsp *http.Response) (*GetBlockchainResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest []Block
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest ErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateBlockFromTransactionsResponse parses an HTTP response from a CreateBlockFromTransactionsWithResponse call
-func ParseCreateBlockFromTransactionsResponse(rsp *http.Response) (*CreateBlockFromTransactionsResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateBlockFromTransactionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Block
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

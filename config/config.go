@@ -2,7 +2,7 @@ package config
 
 type Log struct {
 	Format string `default:"text"`
-	Level  string `default:"info"`
+	Level  string `default:"debug"`
 }
 
 type Wallet struct {

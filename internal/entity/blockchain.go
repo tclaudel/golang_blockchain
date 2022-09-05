@@ -2,6 +2,8 @@ package entity
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/tclaudel/golang_blockchain/internal/values"
 	"github.com/tclaudel/golang_blockchain/pkg/entity"
@@ -20,9 +22,11 @@ type BlockchainNode struct {
 	owner               values.Wallet
 	miningReward        values.Amount
 	walletInitialAmount values.Amount
+	commitMutex         sync.Mutex
+	miningInterval      time.Duration
 }
 
-func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet values.Wallet, walletInitialAmount values.Amount, repositories repositories.ServerRepositories) (*BlockchainNode, error) {
+func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet values.Wallet, walletInitialAmount values.Amount, repositories repositories.ServerRepositories, miningInterval time.Duration) (*BlockchainNode, error) {
 	bc := &BlockchainNode{
 		nodeWallet:          nodeWallet,
 		transactionsPool:    NewTransactionPool(),
@@ -31,10 +35,19 @@ func NewBlockchainNode(nodeWallet values.Wallet, logger *zap.Logger, wallet valu
 		owner:               wallet,
 		miningReward:        values.AmountFromFloat64(reward),
 		walletInitialAmount: walletInitialAmount,
+		miningInterval:      miningInterval,
 	}
 
 	logger.Info("initialized blockchain node", zap.String("owner", wallet.Address().String()))
 	return bc, nil
+}
+
+func (bc *BlockchainNode) CronMining() {
+	_, err := bc.Commit()
+	if err != nil {
+		bc.logger.Error("failed to commit", zap.Error(err))
+	}
+	_ = time.AfterFunc(bc.miningInterval, bc.CronMining)
 }
 
 func (bc *BlockchainNode) TransactionPool() []values.Transaction {
@@ -118,6 +131,9 @@ func (bc *BlockchainNode) AppendTransaction(
 }
 
 func (bc *BlockchainNode) Commit() (*Block, error) {
+	bc.commitMutex.Lock()
+	defer bc.commitMutex.Unlock()
+
 	txs := bc.transactionsPool.Export()
 
 	if len(txs) == 0 {
